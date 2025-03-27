@@ -88,7 +88,7 @@ size_t getLine(char** string, size_t* size, FILE* stream) {
         return ERTOOLONG;
     }
 
-    currentSize = counter + 1;
+    currentSize = counter + 2;
     if ((result = realloc_f(result, currentSize * sizeof(char))) == NULL) return ERMALLOC;
 
     result[counter] = '\0';
@@ -105,8 +105,9 @@ long parseLong(char* startPtr, char** endPtr) {
     int negFlag = 0;
     unsigned cursor = 0;
 
-    for (; numberStartIndex < UINT_MAX; numberStartIndex++) {
+    while (numberStartIndex < UINT_MAX) {
         if (!isSpace(startPtr[numberStartIndex])) break;
+        numberStartIndex++;
     }
 
     if (startPtr[numberStartIndex] == '-') {
@@ -340,6 +341,44 @@ size_t readLongWithDialog_v(long* ptr, char* message, int (*validator)(long numb
     } while (tmpError);
     return 0;
 }
+//i hate it...
+
+size_t readChar_v(char* ptr, int (*validator)(char number)) {
+    char* str = NULL;
+    size_t errorTmp = 0;
+    long num = 0;
+
+    if (errorTmp = getLine(&str, NULL, stdin)) return errorTmp;
+    if (!isValidString(str, isValidIntString)) {
+        free(str);
+        return ERINVALIDUERINPUT;
+    }
+
+    num = parseLong(str, NULL);
+    free(str);
+
+    if(num < -128 || num > 127) return EROUTOFRANGE;
+    if (errno) return errnoToStatusCode(errno);
+    if (validator && !validator((char) num)) return ERVALIDATION;
+    *ptr = num;
+
+    return 0;
+}
+//this too
+size_t readCharWithDialog_v(char* ptr, char* message, int (*validator)(char number)) {
+    size_t tmpError = 0;
+    do {
+        printf("%s", message);
+
+        if (tmpError = readChar_v(ptr, validator)) {
+            if (tmpError == ERMALLOC) return ERMALLOC;
+            printf("Error occured while parsing number: %s\n", getStatusDescription(tmpError));
+        }
+
+    } while (tmpError);
+    return 0;
+}
+
 
 double parseDouble(char* startPtr, char** endPtr) {
     errno = 0;
